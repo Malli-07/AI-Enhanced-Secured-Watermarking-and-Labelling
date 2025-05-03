@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watermarking and Labelling</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body { 
+            background:rgb(0, 225, 255);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .navbar {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            padding: 10px 20px;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        .content-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: row;
+            max-width: 1200px;
+            width: 90%;
+            margin-top: 80px;
+            gap: 50px;
+        }
+        .text-content {
+            color: black;
+            max-width: 500px;
+        }
+        .main-container {
+            width: 500px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .error-message {
+            color: red;
+            margin-bottom: 10px;
+        }
+        .form-control {
+            margin-bottom: 20px; 
+        }
+        .forgot-password {
+            display: block;
+            margin-bottom: 15px;
+            color: #007BFF;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .download-btn {
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <button class="btn btn-secondary me-2" onclick="showLogin()">Login</button>
+        <button class="btn btn-secondary" onclick="showSignup()">Signup</button>
+    </div>
+    
+    <div class="content-wrapper" id="authWrapper">
+        <div class="text-content" id="infoContent">
+            <h1>Watermarking and Labelling</h1>
+            <p>Ensure secure and identifiable content with advanced watermarking and labeling technology.</p>
+        </div>
+        <div class="main-container" id="authContainer">
+            <div id="loginForm">
+                <h2 class="title">Login</h2>
+                <input type="email" id="loginEmail" class="form-control" placeholder="Enter your email">
+                <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password">
+                <span class="forgot-password" onclick="forgotPassword()">Forgot Password?</span>
+                <div class="error-message" id="loginError"></div>
+                <button class="btn btn-primary w-100" onclick="login()">Login</button>
+            </div>
+            <div id="signupForm" style="display: none;">
+                <h2 class="title">Signup</h2>
+                <input type="email" id="signupEmail" class="form-control" placeholder="Enter your email">
+                <input type="password" id="signupPassword" class="form-control" placeholder="Create a password">
+                <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm password">
+                <div class="error-message" id="signupError"></div>
+                <button class="btn btn-primary w-100" onclick="signup()">Signup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('signupForm').style.display = 'none';
+        }
+
+        function showSignup() {
+            document.getElementById('signupForm').style.display = 'block';
+            document.getElementById('loginForm').style.display = 'none';
+        }
+
+        function forgotPassword() {
+            let email = prompt("Enter your email to reset password:");
+            if (email && localStorage.getItem(email)) {
+                alert("Reset password link has been sent to " + email);
+            } else {
+                alert("Email not found. Please sign up.");
+            }
+        }
+
+        function signup() {
+            let email = document.getElementById('signupEmail').value.trim();
+            let password = document.getElementById('signupPassword').value;
+            let confirmPassword = document.getElementById('confirmPassword').value;
+            let errorDiv = document.getElementById('signupError');
+
+            if (password !== confirmPassword) {
+                errorDiv.innerText = "Passwords do not match!";
+                return;
+            }
+            
+            localStorage.setItem(email, password);
+            alert("Signup successful! You can now log in.");
+            showLogin();
+        }
+
+        function login() {
+            let email = document.getElementById('loginEmail').value.trim();
+            let password = document.getElementById('loginPassword').value;
+            let errorDiv = document.getElementById('loginError');
+
+            if (localStorage.getItem(email) === password) {
+                alert("Login successful!");
+                document.getElementById('authWrapper').innerHTML = `
+                    <div class="text-content">
+                        <h1>Watermarking and Labelling</h1>
+                        <p>Ensure secure and identifiable content with advanced watermarking and labeling technology.</p>
+                    </div>
+                    <div class="main-container">
+                        <h2>Upload Content for Analysis</h2>
+                        <form id="uploadForm" onsubmit="analyze(event)">
+                            <textarea id="textInput" class="form-control mb-2" placeholder="Paste your text here..."></textarea>
+                            <input type="file" id="imageInput" class="form-control mb-2" accept="image/*">
+                            <button type="submit" class="btn btn-primary w-100">Analyze</button>
+                        </form>
+                        <div class="result mt-3" id="result"></div>
+                        <a id="downloadLink" class="btn btn-success download-btn" style="display:none;" download="processed_image.png">Download Processed Image</a>
+                    </div>`;
+            } else {
+                errorDiv.innerText = "Incorrect email or password!";
+            }
+        }
+
+        async function analyze(event) {
+            event.preventDefault();
+            
+            const text = document.getElementById('textInput').value;
+            const image = document.getElementById('imageInput').files[0];
+            const formData = new FormData();
+            if (text) formData.append('text', text);
+            if (image) formData.append('image', image);
+
+            const response = await fetch('/analyze', { method: 'POST', body: formData });
+
+            if (response.headers.get("Content-Type")?.includes("application/json")) {
+                const result = await response.json();
+                let resultHTML = '';
+
+                if (result.text_analysis) {
+                    resultHTML += `<h4>Text Analysis:</h4>
+                                   <p>${result.text_analysis.message}</p>
+                                   <p>AI Probability: ${result.text_analysis["AI Probability"]}</p>`;
+                }
+
+                if (result.image_analysis) {
+                    resultHTML += `<h4>Image Analysis:</h4>
+                                   <p>${result.image_analysis.message}</p>
+                                   <p>AI Probability: ${result.image_analysis["AI Probability"]}</p>`;
+                }
+
+                document.getElementById('result').innerHTML = resultHTML;
+            } else {
+                const blob = await response.blob();
+                const downloadURL = URL.createObjectURL(blob);
+                const downloadLink = document.getElementById('downloadLink');
+                downloadLink.href = downloadURL;
+                downloadLink.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
